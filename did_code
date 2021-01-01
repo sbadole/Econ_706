@@ -163,6 +163,12 @@ outreg2 using enrollment_aser.tex, label ctitle(Enrollment in Grade 8) keep(trea
 **************************************************** Event Study **************************************************
 *******************************************************************************************************************
 
+
+
+*******************************************************************************************************************
+**************************************************** Event Study **************************************************
+*******************************************************************************************************************
+
 * Generate year dummies 
 generate year_2007 = 0
 replace year_2007 = 1 if year==2007
@@ -198,5 +204,49 @@ estimates store est1_enrolled
 coefplot (est1_enrolled,mc(black)ciopts(lcolor(blue))), omitted baselevels vertical xline(3, lcolor(brown)) yline(0, lcolor(brown)) keep(t0 t1 t2 t3 t4) xlabel(1"2007" 2 "2008" 3 "2009" 4"2010" 5"2011") graphregion(color(gs16)) bgcolor(white) legend(off) xtitle("Year") ytitle("Students Enrolled in 8th grade") connect(l)
 * save plot
 graph export "/Users/sachin/Downloads/Econ_706/Econ_706_project/ASER/event_study.svg", as(svg) name("Graph") replace
+
+************************************************************************************************************************
+****************************************************** Math Score ******************************************************
+************************************************************************************************************************
+
+* Math score
+generate math_score_sd = 0
+replace math_score_sd = 1 if math_score==4 | math_score==3
+
+* DID regression without year and district fixed effect
+regress math_score_sd treat_post_t treat post_t [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table_score.tex, replace label ctitle(Math Score) keep(treat_post_t treat) title(Table 3: Test Score - Effect of Right to Education Act) addnote(Note: This is main results) nonotes addtext(District Fixed-Effect, No, Year Fixed-Effect, No)
+
+* DID regression with year fixed effect
+regress math_score_sd treat_post_t treat i.year [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Math Score) keep(treat_post_t treat i.year) title(Table 3: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, Yes)
+
+* DID regression with year and district fixed effect
+areg math_score_sd treat_post_t treat i.year [pw = hh_multiplier], absorb(district_code) cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Math Score) keep(treat_post_t treat i.year) title(Table 3: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes)
+
+************************************************************************************************************************
+****************************************************** Reading Score ***************************************************
+************************************************************************************************************************
+
+*  Read score
+generate read_score_sp = 0
+replace read_score_sp = 1 if read_score==4 | read_score==3
+
+* DID regression without year and district fixed effect
+regress read_score_sp treat_post_t treat post_t [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Reading scroe) keep(treat_post_t treat) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, No)
+
+* DID regression with year fixed effect
+regress read_score_sp treat_post_t treat i.year [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Reading Score) keep(treat_post_t treat i.year) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, Yes)
+
+* DID regression with year and district fixed effect
+areg read_score_sp treat_post_t treat i.year [pw = hh_multiplier], absorb(district_code) cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Reading Score) keep(treat_post_t treat i.year) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes)
+
+
+
+
 
 log close
