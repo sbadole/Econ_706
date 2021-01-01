@@ -159,6 +159,44 @@ outreg2 using enrollment_aser.tex, label ctitle(Enrollment in Grade 8) keep(trea
 areg enrolled treat_post_t treat i.year hh_type hh_toilet hh_tv mother_gone_to_school vlg_pucca_road vlg_electricity vlg_std_booth vlg_post_office vlg_govt_primary_school [pw = hh_multiplier], absorb(district_code) cluster(district_code)
 outreg2 using enrollment_aser.tex, label ctitle(Enrollment in Grade 8) keep(treat_post_t treat i.year hh_type hh_toilet hh_tv mother_gone_to_school vlg_pucca_road vlg_electricity vlg_post_office vlg_govt_primary_school) title(Table 1: Main Results - Effect of Right to Education Act) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, Yes, Village Control, Yes)
 
+*******************************************************************************************************************
+**************************************************** Event Study **************************************************
+*******************************************************************************************************************
 
+* Generate year dummies 
+generate year_2007 = 0
+replace year_2007 = 1 if year==2007
+generate year_2008 = 0
+replace year_2008 = 1 if year==2008
+generate year_2009 = 0
+replace year_2009 = 1 if year==2009
+generate year_2010 = 0
+replace year_2010 = 1 if year==2010
+generate year_2011 = 0
+replace year_2011 = 1 if year==2011
+
+* Create new treatment variable/ lag and lead
+generate t0 = treat*year_2007
+generate t1 = treat*year_2008
+generate t2 = treat*year_2009
+generate t3 = treat*year_2010
+generate t4 = treat*year_2011
+
+* Label treatment variable
+label variable t0 "3 Year Prior (2007)"
+label variable t1 "2 Year Prior (2008)"
+label variable t2 "1 Year Prior (2009)"
+label variable t3 "Enactment Year (2010)"
+label variable t4 "1 Year After (2011)"
+
+* Event study code
+areg enrolled t0 t1 t2 t3 t4 i.year [pw = hh_multiplier], absorb(district_code) cluster(district_code) 
+outreg2 using event_study.tex, replace ctitle(Enrollment in Grade 8) keep(t0 t1 t2 t3 t4) title(Table 3: Event Study - Effect of Right to Education Act)
+estimates store est1_enrolled
+
+* Code for plot
+coefplot (est1_enrolled,mc(black)ciopts(lcolor(blue))), omitted baselevels vertical xline(3, lcolor(brown)) yline(0, lcolor(brown)) keep(t0 t1 t2 t3 t4) xlabel(1"2007" 2 "2008" 3 "2009" 4"2010" 5"2011") graphregion(color(gs16)) bgcolor(white) legend(off) xtitle("Year") ytitle("Students Enrolled in 8th grade") connect(l)
+* save plot
+graph export "/Users/sachin/Downloads/Econ_706/Econ_706_project/ASER/event_study.svg", as(svg) name("Graph") replace
 
 log close
