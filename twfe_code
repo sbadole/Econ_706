@@ -1,0 +1,161 @@
+clear all
+capture log close
+set more off
+log using code1_DID.log, replace
+set maxvar 11000
+
+* cd "/Users/sachin/Downloads/Econ_706/Econ_706_project/ASER"
+***************************************************************
+* Table 3: Two-way fixed effect Results - Effect of the RTE Act
+***************************************************************
+use "ASER_Household_analysis.dta", clear
+set matsize 11000
+
+xtset district_code
+
+* Replacing hhtype values according to 2010 dataset
+replace hh_type = 1 if hhtype_katcha == 1
+replace hh_type = 2 if hhtype_semi_katcha == 1
+replace hh_type = 3 if hhtype_pucca == 1
+
+*Replacing household toilet variable according to 2010
+replace hh_toilet = 1 if hh_toilet_yes == 1
+replace hh_toilet = 2 if hh_toilet_no == 1
+drop hh_toilet_yes hh_toilet_no
+replace hh_toilet = 0 if hh_toilet == 2
+
+
+*Replacing household Electricity variable according to 2010
+replace hh_electricity_conn = 1 if hh_electricity_conn_yes == 1
+replace hh_electricity_conn = 2 if hh_electricity_conn_no == 1
+drop hh_electricity_conn_yes hh_electricity_conn_no
+replace hh_electricity_conn = 0 if hh_electricity_conn == 2
+
+
+*Replacing household Electricity variable according to 2010
+replace hh_electricity_today = 1 if hh_electricity_today_yes == 1
+replace hh_electricity_today = 2 if hh_electricity_today_no == 1
+drop hh_electricity_today_yes hh_electricity_today_no
+replace hh_electricity_today = 0 if hh_electricity_today == 2
+
+*Replacing household tv variable 
+replace hh_tv = 1 if hh_tv_yes == 1
+replace hh_tv = 2 if hh_tv_no == 1
+drop hh_tv_yes hh_tv_no
+replace hh_tv = 0 if hh_tv == 2
+
+
+*Replacing household Newspaper  variable 
+replace hh_newspaper = 1 if hh_newspaper_yes == 1
+replace hh_newspaper = 2 if hh_newspaper_no == 1
+drop hh_newspaper_yes hh_newspaper_no
+replace hh_newspaper = 0 if hh_newspaper == 2
+
+*Replacing household Computer   variable 
+replace hh_computer_use = 1 if hh_computer_use_yes == 1
+replace hh_computer_use = 2 if hh_computer_use_no== 1
+drop hh_computer_use_yes hh_computer_use_no
+replace hh_computer_use = 0 if hh_computer_use == 2
+
+*Replacing household Computer   variable 
+replace hh_reading_material = 1 if hh_reading_material_yes == 1
+replace hh_reading_material = 2 if hh_reading_material_no== 1
+drop hh_reading_material_yes hh_reading_material_no
+replace hh_reading_material = 0 if hh_reading_material == 2
+
+
+*Replacing hh mobile variable
+replace hh_mobile = 1 if hh_mobile_yes == 1
+replace hh_mobile = 2 if hh_mobile_no == 1
+drop hh_mobile_yes hh_mobile_no
+replace hh_mobile = 0 if hh_mobile == 2 
+
+
+*Replacing mother gone to school variable
+replace mother_gone_to_school = 1 if mother_gone_to_school_yes == 1
+replace mother_gone_to_school = 2 if mother_gone_to_school_no == 1
+drop mother_gone_to_school_yes mother_gone_to_school_no
+replace mother_gone_to_school = 0 if mother_gone_to_school == 2
+
+*Replacing Father gone to school variable
+replace father_gone_to_school = 1 if father_gone_to_school_yes == 1
+replace father_gone_to_school = 2 if father_gone_to_school_no == 1
+drop father_gone_to_school_yes father_gone_to_school_no
+replace father_gone_to_school = 0 if father_gone_to_school == 2
+
+
+*Replacing surveyed school variable
+replace surveyed_school = 1 if surveyed_school_yes == 1
+replace surveyed_school = 2 if surveyed_school_no == 1
+drop surveyed_school_yes surveyed_school_no
+replace surveyed_school = 0 if surveyed_school == 2
+
+* Drop jammu and kashmir state 
+drop if state_code==1 
+
+* Geneate Treat variable
+generate treat = 0
+
+* 2010
+replace treat = 1 if (state_code==35 | state_code==28 | state_code==12 | state_code==04 | state_code==22 | state_code==26 | state_code==25 | state_code==31 | state_code==14 | state_code==21 | state_code==11) & year==2010
+
+* 2011
+replace treat = 1 if (state_code==18 | state_code==10 | state_code==06 | state_code==02 | state_code==20 | state_code==32 | state_code==23 | state_code==17 | state_code==15 | state_code==13 | state_code==08 | state_code==16 | state_code==09) & year==2011
+
+* 2012
+replace treat = 1 if (state_code==07 | state_code==30 | state_code==24 | state_code== 29 | state_code==27 | state_code==34 | state_code==03 | state_code==33 | state_code==05 | state_code==19) & year==2012
+
+* Drop some year 
+drop if year>=2015
+
+*Drop class which are greater than 8th grade
+keep if child_age==14 | child_age ==13 
+
+* enrollment variable
+gen enrolled = 0 if dropout==1 | never==1
+replace enrolled = 1 if (govt == 1 | pvt == 1 | other == 1) & (class1==8)   
+drop if enrolled==.
+
+* label variable
+label variable enrolled "Enrollment of 8th grade Students"
+label variable treat "Treat"
+label variable hh_type "Type of material house is made"
+label variable hh_toilet "Household has toilet"
+label variable hh_tv "Household has television"
+label variable mother_gone_to_school "Mother attended school"
+label variable vlg_pucca_road "Village had a tarred metal road"
+label variable vlg_electricity "Village had electricity"
+label variable vlg_post_office "Village had a post office"
+label variable vlg_govt_primary_school "Village had a Govt. school"
+
+*********************************************************** Enrollment **********************************************
+* TWFE regression 
+areg enrolled treat i.year [pw = hh_multiplier], cluster(district_code) absorb(district_code)
+outreg2 using enroll_rate_twfe.tex, replace label ctitle(Enrollment in Grade 8) keep(treat) title(Table 1: Two-way fixed effect Results - Effect of the RTE Act) addnote(Note: This is main results) nonotes addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, No) 
+
+* TWFE regression household control
+areg enrolled treat i.year hh_type hh_toilet hh_tv mother_gone_to_school [pw = hh_multiplier], cluster(district_code) absorb(district_code)
+outreg2 using enroll_rate_twfe.tex, label ctitle(Enrollment in Grade 8) keep(treat hh_type hh_toilet hh_tv mother_gone_to_school) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, Yes) 
+
+********************************************************************************************************************
+*********************************************************** Math scores ********************************************
+* Math score
+generate math_score_sd = 0
+replace math_score_sd = 1 if math_score==4 | math_score==3
+
+* TWFE regression with year and district fixed effect
+areg math_score_sd treat i.year [pw = hh_multiplier], cluster(district_code) absorb(district_code)
+outreg2 using enroll_rate_twfe.tex, label ctitle(Math Score) keep(treat) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, No) 
+
+********************************************************************************************************************
+*********************************************************** Reading scores *****************************************
+*  Read score
+generate read_score_sp = 0
+replace read_score_sp = 1 if read_score==4 | read_score==3
+
+* TWFE regression with year and district fixed effect
+areg read_score_sp treat i.year [pw = hh_multiplier], cluster(district_code) absorb(district_code)
+outreg2 using enroll_rate_twfe.tex, label ctitle(Reading Score) keep(treat) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, No) 
+
+
+log close
