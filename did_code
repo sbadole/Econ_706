@@ -90,10 +90,6 @@ replace surveyed_school = 2 if surveyed_school_no == 1
 drop surveyed_school_yes surveyed_school_no
 replace surveyed_school = 0 if surveyed_school == 2
 
-*Creating household charachteristcs variable 
-gen hh_char = hh_type + hh_electricity_conn + hh_toilet + hh_tv + hh_newspaper + hh_computer_use + mother_gone_to_school + father_gone_to_school + hh_reading_material
-label variable hh_char "HH Charachteristics"
-
 
 * Drop some state those have RTE inforce in 2011.
 drop if state_code==1 | state_code==18 | state_code==10 | state_code==06 | state_code==02 | state_code==20 | state_code==32 | state_code==23 | state_code==17 | state_code==15 | state_code==13 | state_code==08 | state_code==16 | state_code==09
@@ -135,6 +131,7 @@ label variable vlg_electricity "Village had electricity"
 label variable vlg_post_office "Village had a post office"
 label variable vlg_govt_primary_school "Village had a Govt. school"
 
+* Table 4: Difference-in-Difference Results - Effect of Right to Education Act (ASER Data)
 *********************************************************** Enrollment **********************************************
 * DID regression 
 regress enrolled treat_post_t treat post_t [pw = hh_multiplier], cluster(district_code)
@@ -159,11 +156,47 @@ outreg2 using enrollment_aser.tex, label ctitle(Enrollment in Grade 8) keep(trea
 areg enrolled treat_post_t treat i.year hh_type hh_toilet hh_tv mother_gone_to_school vlg_pucca_road vlg_electricity vlg_std_booth vlg_post_office vlg_govt_primary_school [pw = hh_multiplier], absorb(district_code) cluster(district_code)
 outreg2 using enrollment_aser.tex, label ctitle(Enrollment in Grade 8) keep(treat_post_t treat i.year hh_type hh_toilet hh_tv mother_gone_to_school vlg_pucca_road vlg_electricity vlg_post_office vlg_govt_primary_school) title(Table 1: Main Results - Effect of Right to Education Act) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, Yes, Village Control, Yes)
 
-*******************************************************************************************************************
-**************************************************** Event Study **************************************************
-*******************************************************************************************************************
+************************************************************************************************************************
+****************************************************** Math Score ******************************************************
+************************************************************************************************************************
+* Table 7: Math Test Score 
 
+* Math score
+generate math_score_sd = 0
+replace math_score_sd = 1 if math_score==4 | math_score==3
 
+* DID regression without year and district fixed effect
+regress math_score_sd treat_post_t treat post_t [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table_score.tex, replace label ctitle(Math Score) keep(treat_post_t treat) title(Table 3: Test Score - Effect of Right to Education Act) addnote(Note: This is main results) nonotes addtext(District Fixed-Effect, No, Year Fixed-Effect, No)
+
+* DID regression with year fixed effect
+regress math_score_sd treat_post_t treat i.year [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Math Score) keep(treat_post_t treat i.year) title(Table 3: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, Yes)
+
+* DID regression with year and district fixed effect
+areg math_score_sd treat_post_t treat i.year [pw = hh_multiplier], absorb(district_code) cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Math Score) keep(treat_post_t treat i.year) title(Table 3: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes)
+
+************************************************************************************************************************
+****************************************************** Reading Score ***************************************************
+************************************************************************************************************************
+* Table 7: Reading Test Score 
+
+*  Read score
+generate read_score_sp = 0
+replace read_score_sp = 1 if read_score==4 | read_score==3
+
+* DID regression without year and district fixed effect
+regress read_score_sp treat_post_t treat post_t [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Reading scroe) keep(treat_post_t treat) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, No)
+
+* DID regression with year fixed effect
+regress read_score_sp treat_post_t treat i.year [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Reading Score) keep(treat_post_t treat i.year) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, Yes)
+
+* DID regression with year and district fixed effect
+areg read_score_sp treat_post_t treat i.year [pw = hh_multiplier], absorb(district_code) cluster(district_code)
+outreg2 using DID_table_score.tex, label ctitle(Reading Score) keep(treat_post_t treat i.year) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes)
 
 *******************************************************************************************************************
 **************************************************** Event Study **************************************************
@@ -195,58 +228,67 @@ label variable t2 "1 Year Prior (2009)"
 label variable t3 "Enactment Year (2010)"
 label variable t4 "1 Year After (2011)"
 
+* Table 6: Event Study - Effect of Right to Education Act (ASER Data)
 * Event study code
 areg enrolled t0 t1 t2 t3 t4 i.year [pw = hh_multiplier], absorb(district_code) cluster(district_code) 
 outreg2 using event_study.tex, replace ctitle(Enrollment in Grade 8) keep(t0 t1 t2 t3 t4) title(Table 3: Event Study - Effect of Right to Education Act)
 estimates store est1_enrolled
 
 * Code for plot
+* Figure 2. Event Study - Effect of Right to Education Act
 coefplot (est1_enrolled,mc(black)ciopts(lcolor(blue))), omitted baselevels vertical xline(3, lcolor(brown)) yline(0, lcolor(brown)) keep(t0 t1 t2 t3 t4) xlabel(1"2007" 2 "2008" 3 "2009" 4"2010" 5"2011") graphregion(color(gs16)) bgcolor(white) legend(off) xtitle("Year") ytitle("Students Enrolled in 8th grade") connect(l)
 * save plot
 graph export "/Users/sachin/Downloads/Econ_706/Econ_706_project/ASER/event_study.svg", as(svg) name("Graph") replace
 
-************************************************************************************************************************
-****************************************************** Math Score ******************************************************
-************************************************************************************************************************
+log close
 
-* Math score
-generate math_score_sd = 0
-replace math_score_sd = 1 if math_score==4 | math_score==3
+*******************************************************************************************************************
+**************************************************** Parallel Trend ***********************************************
+*******************************************************************************************************************
+* Table 5: Testing the Parallel Trends Assumption (ASER Data)
 
-* DID regression without year and district fixed effect
-regress math_score_sd treat_post_t treat post_t [pw = hh_multiplier], cluster(district_code)
-outreg2 using DID_table_score.tex, replace label ctitle(Math Score) keep(treat_post_t treat) title(Table 3: Test Score - Effect of Right to Education Act) addnote(Note: This is main results) nonotes addtext(District Fixed-Effect, No, Year Fixed-Effect, No)
+clear all
+capture log close
+set more off
+log using code3_parallel.log, replace
+set maxvar 11000
 
-* DID regression with year fixed effect
-regress math_score_sd treat_post_t treat i.year [pw = hh_multiplier], cluster(district_code)
-outreg2 using DID_table_score.tex, label ctitle(Math Score) keep(treat_post_t treat i.year) title(Table 3: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, Yes)
+******************************************************************
+* Check the parallel trends
+use "ASER_Household_analysis.dta", clear
+set matsize 11000
 
-* DID regression with year and district fixed effect
-areg math_score_sd treat_post_t treat i.year [pw = hh_multiplier], absorb(district_code) cluster(district_code)
-outreg2 using DID_table_score.tex, label ctitle(Math Score) keep(treat_post_t treat i.year) title(Table 3: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes)
+xtset district_code 
 
-************************************************************************************************************************
-****************************************************** Reading Score ***************************************************
-************************************************************************************************************************
+* Drop some state those have RTE inforce in 2011.
+drop if state_code==1 | state_code==18 | state_code==10 | state_code==06 | state_code==02 | state_code==20 | state_code==32 | state_code==23 | state_code==17 | state_code==15 | state_code==13 | state_code==08 | state_code==16 | state_code==09
 
-*  Read score
-generate read_score_sp = 0
-replace read_score_sp = 1 if read_score==4 | read_score==3
+* Geneate Treat variable
+generate treat = 0 if state_code==07 | state_code==30 | state_code==24 | state_code== 29 | state_code==27 | state_code==34 | state_code==03 | state_code==33 | state_code==05 | state_code==19 
 
-* DID regression without year and district fixed effect
-regress read_score_sp treat_post_t treat post_t [pw = hh_multiplier], cluster(district_code)
-outreg2 using DID_table_score.tex, label ctitle(Reading scroe) keep(treat_post_t treat) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, No)
+replace treat = 1 if state_code==35 | state_code==28 | state_code==12 | state_code==04 | state_code==22 | state_code==26 | state_code==25 | state_code==31 | state_code==14 | state_code==21 | state_code==11
 
-* DID regression with year fixed effect
-regress read_score_sp treat_post_t treat i.year [pw = hh_multiplier], cluster(district_code)
-outreg2 using DID_table_score.tex, label ctitle(Reading Score) keep(treat_post_t treat i.year) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, No, Year Fixed-Effect, Yes)
+* Drop some year 
+drop if year>=2010
 
-* DID regression with year and district fixed effect
-areg read_score_sp treat_post_t treat i.year [pw = hh_multiplier], absorb(district_code) cluster(district_code)
-outreg2 using DID_table_score.tex, label ctitle(Reading Score) keep(treat_post_t treat i.year) title(Table 4: Test Score - Effect of Right to Education Act) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes)
+* Generate pre period variable
+generate pre_t = 0 if year==2008 | year==2007
+replace pre_t = 1 if year==2009 
+drop if pre_t ==.
 
+* Interaction of treat and pre_t variable
+generate treat_pre_t = treat*pre_t
 
+*Drop class which are greater than 8 grad
+keep if child_age==14 | child_age==13
 
+* enrollment variable
+gen enrolled = 0 if dropout==1 | never==1
+replace enrolled = 1 if (govt == 1 | pvt == 1 | other == 1) & class1==8
+drop if enrolled==.
 
+* DID regression 
+regress enrolled treat_pre_t treat i.year [pw = hh_multiplier], cluster(district_code)
+outreg2 using DID_table2.doc, replace ctitle(Enrollment in Grade 8) keep(treat_pre_t treat i.year) title(Table 2: Testing the Parallel Trends Assumption)
 
 log close
