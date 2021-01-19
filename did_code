@@ -6,7 +6,7 @@ set maxvar 11000
 
 *cd "/Users/sachin/Downloads/Econ_706/Econ_706_project/ASER"
 ***************************************************************
-*DID
+*Data Cleaning
 ***************************************************************
 use "ASER_Household_analysis.dta", clear
 set matsize 11000
@@ -90,6 +90,9 @@ replace surveyed_school = 2 if surveyed_school_no == 1
 drop surveyed_school_yes surveyed_school_no
 replace surveyed_school = 0 if surveyed_school == 2
 
+************************************************************************************************************************************
+* Difference-in-Difference
+************************************************************************************************************************************
 
 * Drop some state those have RTE inforce in 2011.
 drop if state_code==1 | state_code==18 | state_code==10 | state_code==06 | state_code==02 | state_code==20 | state_code==32 | state_code==23 | state_code==17 | state_code==15 | state_code==13 | state_code==08 | state_code==16 | state_code==09
