@@ -292,3 +292,106 @@ regress enrolled treat_pre_t treat i.year [pw = hh_multiplier], cluster(district
 outreg2 using DID_table2.doc, replace ctitle(Enrollment in Grade 8) keep(treat_pre_t treat i.year) title(Table 2: Testing the Parallel Trends Assumption)
 
 log close
+
+**************************************************************************************************************************************
+**************************************************************************************************************************************
+**************************************************************************************************************************************
+
+clear all
+capture log close
+set more off
+log using code1_DID.log, replace
+set maxvar 11000
+
+* cd "/Users/sachin/Downloads/Econ_706/Econ_706_project/ASER"
+***************************************************************
+* Table 3: Two-way fixed effect Results - Effect of the RTE Act
+***************************************************************
+use "ASER_Household_analysis.dta", clear
+set matsize 11000
+
+xtset district_code
+
+* Drop jammu and kashmir state 
+drop if state_code==1 
+
+* Geneate Treat variable
+generate treat = 0
+
+* 2010
+replace treat = 1 if (state_code==35 | state_code==28 | state_code==12 | state_code==04 | state_code==22 | state_code==26 | state_code==25 | state_code==31 | state_code==14 | state_code==21 | state_code==11) & year==2010
+
+* 2011
+replace treat = 1 if (state_code==18 | state_code==10 | state_code==06 | state_code==02 | state_code==20 | state_code==32 | state_code==23 | state_code==17 | state_code==15 | state_code==13 | state_code==08 | state_code==16 | state_code==09) & year==2011
+
+* 2012
+replace treat = 1 if (state_code==07 | state_code==30 | state_code==24 | state_code== 29 | state_code==27 | state_code==34 | state_code==03 | state_code==33 | state_code==05 | state_code==19) & year==2012
+
+* Drop some year 
+drop if year>=2015
+
+*Drop class which are greater than 8th grade
+keep if child_age==14 | child_age ==13 
+
+* enrollment variable
+gen enrolled = 0 if dropout==1 | never==1
+replace enrolled = 1 if (govt == 1 | pvt == 1 | other == 1) & (class1==8)   
+drop if enrolled==.
+
+* label variable
+label variable enrolled "Enrollment of 8th grade Students"
+label variable treat "Treat"
+label variable hh_type "Type of material house is made"
+label variable hh_toilet "Household has toilet"
+label variable hh_tv "Household has television"
+label variable mother_gone_to_school "Mother attended school"
+label variable vlg_pucca_road "Village had a tarred metal road"
+label variable vlg_electricity "Village had electricity"
+label variable vlg_post_office "Village had a post office"
+label variable vlg_govt_primary_school "Village had a Govt. school"
+
+*********************************************************** Enrollment **********************************************
+* TWFE regression 
+areg enrolled treat i.year [pw = hh_multiplier], cluster(district_code) absorb(district_code)
+outreg2 using enroll_rate_twfe.tex, replace label ctitle(Enrollment in Grade 8) keep(treat) title(Table 1: Two-way fixed effect Results - Effect of the RTE Act) addnote(Note: This is main results) nonotes addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, No) 
+
+* TWFE regression household control
+areg enrolled treat i.year hh_type hh_toilet hh_tv mother_gone_to_school [pw = hh_multiplier], cluster(district_code) absorb(district_code)
+outreg2 using enroll_rate_twfe.tex, label ctitle(Enrollment in Grade 8) keep(treat hh_type hh_toilet hh_tv mother_gone_to_school) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, Yes) 
+
+********************************************************************************************************************
+*********************************************************** Math scores ********************************************
+* Math score
+generate math_score_sd = 0
+replace math_score_sd = 1 if math_score==4 | math_score==3
+
+* TWFE regression with year and district fixed effect
+areg math_score_sd treat i.year [pw = hh_multiplier], cluster(district_code) absorb(district_code)
+outreg2 using enroll_rate_twfe.tex, label ctitle(Math Score) keep(treat) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, No) 
+
+********************************************************************************************************************
+*********************************************************** Reading scores *****************************************
+*  Read score
+generate read_score_sp = 0
+replace read_score_sp = 1 if read_score==4 | read_score==3
+
+* TWFE regression with year and district fixed effect
+areg read_score_sp treat i.year [pw = hh_multiplier], cluster(district_code) absorb(district_code)
+outreg2 using enroll_rate_twfe.tex, label ctitle(Reading Score) keep(treat) addtext(District Fixed-Effect, Yes, Year Fixed-Effect, Yes, Household Control, No) 
+
+
+log close
+
+
+
+
+
+
+
+
+
+
+
+
+
+
